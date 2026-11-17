@@ -1,7 +1,6 @@
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
 import express from "express";
-import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import User from "./db/db.js";
 
@@ -9,7 +8,6 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
-const jwtSecret = process.env.JWT_SECRET;
 const mongoUri = process.env.MONGODB_URI?.trim();
 
 app.use(express.json({ limit: "10kb" }));
@@ -18,14 +16,8 @@ function isValidCredentialsBody(body) {
   return body !== null && typeof body === "object" && !Array.isArray(body);
 }
 
-function createAuthResponse(user, response, status = 200) {
-  const token = jwt.sign({ sub: user.id }, jwtSecret, {
-    algorithm: "HS256",
-    expiresIn: "1h",
-  });
-
+function sendUserResponse(user, response, status = 200) {
   return response.status(status).json({
-    token,
     user: {
       id: user.id,
       username: user.username,
@@ -80,7 +72,7 @@ app.post("/register", async (request, response) => {
     passwordHash: await bcrypt.hash(password, 12),
   });
 
-  return createAuthResponse(user, response, 201);
+  return sendUserResponse(user, response, 201);
 });
 
 app.post("/login", async (request, response) => {
@@ -109,7 +101,7 @@ app.post("/login", async (request, response) => {
     return response.status(401).json({ message: "Invalid email or password" });
   }
 
-  return createAuthResponse(user, response);
+  return sendUserResponse(user, response);
 });
 
 app.use((error, _request, response, next) => {
@@ -122,10 +114,6 @@ app.use((error, _request, response, next) => {
 
 if (!mongoUri) {
   throw new Error("MONGODB_URI must be set before starting the server");
-}
-
-if (!jwtSecret || Buffer.byteLength(jwtSecret, "utf8") < 32) {
-  throw new Error("JWT_SECRET must be set to a secret of at least 32 bytes");
 }
 
 try {

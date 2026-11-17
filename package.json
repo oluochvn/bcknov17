@@ -12,11 +12,9 @@
     "bcryptjs": "^3.0.3",
     "dotenv": "^18.0.10",
     "express": "^5.1.0",
-    "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.12.2"
   },
-  "description": "Install dependencies with `npm install`. Set `MONGODB_URI` to your MongoDB\r connection string and `JWT_SECRET` to a random secret of at least 32 bytes in\r your `.env` file. Then start the server with `npm start`. For development with\r automatic restarts, use `npm run dev`.",
-  "devDependencies": {},
+  "description": "Express backend with MongoDB user registration and login.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/oluochvn/bcknov17.git"
