@@ -1,12 +1,12 @@
 # Express backend
 
-Install dependencies with `npm install`. Copy `.env.example` to `.env`, set
-`MONGODB_URI` to your MongoDB connection string, and replace `JWT_SECRET` with
-a random secret of at least 32 bytes. Then start the server with `npm start`.
-For development with automatic restarts, use `npm run dev`.
+Install dependencies with `npm install`. Set `MONGODB_URI` to your MongoDB
+connection string and `JWT_SECRET` to a random secret of at least 32 bytes in
+your `.env` file. Then start the server with `npm start`. For development with
+automatic restarts, use `npm run dev`.
 
 The server listens on port `3000` by default. Set `PORT` to use a different
-port and `FRONTEND_ORIGIN` to configure the browser client's allowed origin.
+port.
 
 ## Authentication
 

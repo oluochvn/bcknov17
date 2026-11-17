@@ -1,9 +1,9 @@
 import bcrypt from "bcryptjs";
-import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import User from "./db/db.js";
 
 dotenv.config();
 
@@ -11,44 +11,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 const jwtSecret = process.env.JWT_SECRET;
 const mongoUri = process.env.MONGODB_URI?.trim();
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const userSchema = new mongoose.Schema(
-  {
-    username: {
-      type: String,
-      required: true,
-      trim: true,
-      minlength: 3,
-      maxlength: 30,
-    },
-    email: {
-      type: String,
-      required: true,
-      lowercase: true,
-      trim: true,
-      maxlength: 254,
-    },
-    passwordHash: {
-      type: String,
-      required: true,
-      select: false,
-    },
-  },
-  { timestamps: true }
-);
-
-userSchema.index({ username: 1 }, { unique: true });
-userSchema.index({ email: 1 }, { unique: true });
-
-const User = mongoose.model("User", userSchema);
-
-app.set("trust proxy", 1);
-app.use(
-  cors({
-    origin: process.env.FRONTEND_ORIGIN || "http://localhost:5173",
-  })
-);
 app.use(express.json({ limit: "10kb" }));
 
 function isValidCredentialsBody(body) {
@@ -87,15 +50,15 @@ app.post("/register", async (request, response) => {
     username.trim().length < 3 ||
     username.trim().length > 30 ||
     typeof email !== "string" ||
+    email.trim().length === 0 ||
     email.trim().length > 254 ||
-    !emailPattern.test(email.trim()) ||
     typeof password !== "string" ||
     password.length < 8 ||
     Buffer.byteLength(password, "utf8") > 72
   ) {
     return response.status(400).json({
       message:
-        "Provide a username (3-30 characters), valid email, and password (8-72 bytes)",
+        "Provide a username (3-30 characters), email, and password (8-72 bytes)",
     });
   }
 
@@ -111,23 +74,13 @@ app.post("/register", async (request, response) => {
       .json({ message: "Email or username is already registered" });
   }
 
-  try {
-    const user = await User.create({
-      username: normalizedUsername,
-      email: normalizedEmail,
-      passwordHash: await bcrypt.hash(password, 12),
-    });
+  const user = await User.create({
+    username: normalizedUsername,
+    email: normalizedEmail,
+    passwordHash: await bcrypt.hash(password, 12),
+  });
 
-    return createAuthResponse(user, response, 201);
-  } catch (error) {
-    if (error.code === 11000) {
-      return response
-        .status(409)
-        .json({ message: "Email or username is already registered" });
-    }
-
-    throw error;
-  }
+  return createAuthResponse(user, response, 201);
 });
 
 app.post("/login", async (request, response) => {
@@ -139,13 +92,13 @@ app.post("/login", async (request, response) => {
 
   if (
     typeof email !== "string" ||
-    !emailPattern.test(email.trim()) ||
+    email.trim().length === 0 ||
     typeof password !== "string" ||
     password.length === 0
   ) {
     return response
       .status(400)
-      .json({ message: "Provide a valid email and password" });
+      .json({ message: "Provide an email and password" });
   }
 
   const user = await User.findOne({ email: email.trim().toLowerCase() }).select(
@@ -177,7 +130,6 @@ if (!jwtSecret || Buffer.byteLength(jwtSecret, "utf8") < 32) {
 
 try {
   await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 10000 });
-  await User.init();
 
   app.listen(port, () => {
     console.log(`Connected to MongoDB (${mongoose.connection.name})`);

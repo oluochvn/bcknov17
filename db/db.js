@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 const userSchema = new mongoose.Schema(
   {
     username: {
@@ -6,7 +8,6 @@ const userSchema = new mongoose.Schema(
       trim: true,
       minlength: 3,
       maxlength: 30,
-      unique: true,
     },
     email: {
       type: String,
@@ -14,13 +15,15 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
       maxlength: 254,
-      unique: true,
     },
     passwordHash: {
       type: String,
       required: true,
       select: false,
     },
-  },
-  { timestamps: true }
+  }
 );
+
+const User = mongoose.model("User", userSchema);
+
+export default User;
