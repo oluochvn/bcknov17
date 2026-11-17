@@ -4,31 +4,32 @@ import express from "express";
 import mongoose from "mongoose";
 import User from "./db/db.js";
 
-dotenv.config();
-
 const app = express();
 const port = process.env.PORT || 3000;
-const mongoUri = process.env.MONGODB_URI?.trim();
 
-app.use(express.json({ limit: "10kb" }));
+dotenv.config();
 
-function isValidCredentialsBody(body) {
-  return body !== null && typeof body === "object" && !Array.isArray(body);
-}
+app.use(express.json());
 
-function sendUserResponse(user, response, status = 200) {
-  return response.status(status).json({
-    user: {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-    },
+const isValidCredentialsBody = (body) =>
+  body &&
+  typeof body === "object" &&
+  typeof body.email === "string" &&
+  typeof body.password === "string";
+
+const sendUserResponse = (user, response, statusCode = 200) => {
+  return response.status(statusCode).json({
+    id: user._id,
+    username: user.username,
+    email: user.email,
   });
-}
+};
 
 app.get("/", (_request, response) => {
   response.send("test");
 });
+
+const mongoUri = process.env.MONGODB_URI;
 
 app.post("/register", async (request, response) => {
   if (!isValidCredentialsBody(request.body)) {
@@ -37,27 +38,16 @@ app.post("/register", async (request, response) => {
 
   const { username, email, password } = request.body;
 
-  if (
-    typeof username !== "string" ||
-    username.trim().length < 3 ||
-    username.trim().length > 30 ||
-    typeof email !== "string" ||
-    email.trim().length === 0 ||
-    email.trim().length > 254 ||
-    typeof password !== "string" ||
-    password.length < 8 ||
-    Buffer.byteLength(password, "utf8") > 72
-  ) {
+  if (!username || !email || !password || password < 6){
     return response.status(400).json({
-      message:
-        "Provide a username (3-30 characters), email, and password (8-72 bytes)",
+      message: "Enter username, email, and a password with at least 6 characters",
     });
   }
 
-  const normalizedUsername = username.trim();
   const normalizedEmail = email.trim().toLowerCase();
+  const normalizedUsername = username.trim();
   const existingUser = await User.findOne({
-    $or: [{ username: normalizedUsername }, { email: normalizedEmail }],
+    $or: [{ email: normalizedEmail }, { username: normalizedUsername }],
   });
 
   if (existingUser) {
@@ -113,7 +103,7 @@ app.use((error, _request, response, next) => {
 });
 
 if (!mongoUri) {
-  throw new Error("MONGODB_URI must be set before starting the server");
+  throw new Error("server err");
 }
 
 try {
